@@ -1,3 +1,4 @@
+import { TemaService } from './../../tema/services/tema.service';
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DeleteResult, ILike, Repository } from "typeorm";
@@ -9,18 +10,26 @@ export class PostagemService {
     constructor(
         @InjectRepository(Postagem)
         private postagemRepository: Repository<Postagem>,
+        private readonly temaService: TemaService
     ) { }
 
     async findAll(): Promise<Postagem[]> {
         // SELECT * FROM tb_postagens
-        return this.postagemRepository.find();
+        return this.postagemRepository.find({
+            relations: {
+                tema: true
+            }
+        });
     }
 
     async findById(id: number): Promise<Postagem> {
         // SELECT * FROM tb_postagens WHERE id = ?;
         const postagem = await this.postagemRepository.findOne({
             where: {
-                id
+                id,
+            },
+            relations: {
+                tema: true
             }
         });
         if (!postagem) {
@@ -33,12 +42,18 @@ export class PostagemService {
         // SELECT * FROM tb_postagens WHERE titulo LIKE '%?%'
         return this.postagemRepository.find({
             where: {
-                titulo: ILike(`%${titulo}%`)
+                titulo: ILike(`%${titulo}%`),
+            },
+            relations: {
+                tema: true
             }
         })
     }
 
     async create(postagem: Postagem): Promise<Postagem> {
+        await this.temaService.findById(postagem.tema.id);
+
+
         // INSERT INTO tb_postagens (titulo, texto) VALUES (?, ?);
         return await this.postagemRepository.save(postagem);
     }
@@ -50,7 +65,11 @@ export class PostagemService {
             throw new HttpException("O ID da postagem é inválido!", HttpStatus.BAD_REQUEST);
         }
 
+        // Checa se a Postagem existe
         await this.findById(postagem.id);
+
+        // Checa se o Tema da Postagem existe
+        await this.temaService.findById(postagem.tema.id);
 
         // UPDATE tb_postagens SET titulo = ?,
         // texto = ?, 

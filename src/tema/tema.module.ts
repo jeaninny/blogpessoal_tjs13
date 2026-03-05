@@ -9,6 +9,6 @@ import { TemaController } from "./controllers/tema.controller";
     imports: [TypeOrmModule.forFeature([Tema])], //tema.module trabalha diretamente com a entidade Tema
     controllers: [TemaController],
     providers: [TemaService],
-    exports: [],
+    exports: [TemaService],
 })
 export class TemaModule { }
